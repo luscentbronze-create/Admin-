@@ -257,6 +257,16 @@ export const CustomerTrackingView: React.FC<CustomerTrackingViewProps> = ({
                         Quantity: {result.data.product.quantity}
                       </span>
                     )}
+                    {result.data.product.weight && (
+                      <span className="text-emerald-400 block mt-1 font-medium">
+                        Weight: {result.data.product.weight}
+                      </span>
+                    )}
+                    {(result.data.product.length || result.data.product.width) && (
+                      <span className="text-slate-300 block mt-0.5">
+                        Dimensions: {result.data.product.length || '—'} × {result.data.product.width || '—'}
+                      </span>
+                    )}
                     {result.data.product.description && (
                       <span className="text-slate-400 block mt-1 text-[11px]">
                         {result.data.product.description}

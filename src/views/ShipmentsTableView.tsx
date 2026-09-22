@@ -280,11 +280,20 @@ export const ShipmentsTableView: React.FC<ShipmentsTableViewProps> = ({
                     {/* Product */}
                     <td className="py-3.5 px-3 text-slate-200">
                       <span className="font-medium block">{s.product.name}</span>
-                      {s.product.description && (
+                      {(s.product.weight || s.weight || s.product.length || s.length || s.product.width || s.width) ? (
+                        <span className="text-[10px] text-emerald-400 font-mono-code block">
+                          {[
+                            s.product.weight || s.weight,
+                            (s.product.length || s.length || s.product.width || s.width) 
+                              ? `${s.product.length || s.length || '—'}×${s.product.width || s.width || '—'}` 
+                              : ''
+                          ].filter(Boolean).join(' • ')}
+                        </span>
+                      ) : s.product.description ? (
                         <span className="text-[11px] text-slate-500 block truncate max-w-[120px]">
                           {s.product.description}
                         </span>
-                      )}
+                      ) : null}
                     </td>
 
                     {/* Quantity */}

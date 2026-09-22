@@ -73,6 +73,21 @@ export interface DbOpResult {
   isRlsError?: boolean;
 }
 
+export const SUPABASE_COLUMNS_SQL = `-- SwiftShip Logistics - Add Optional Weight, Length, and Width Columns
+-- Run this in your Supabase Dashboard -> SQL Editor (New query -> Run)
+
+-- 1. Ensure weight, length, and width columns exist on shipment_details
+ALTER TABLE public.shipment_details 
+ADD COLUMN IF NOT EXISTS weight text,
+ADD COLUMN IF NOT EXISTS length text,
+ADD COLUMN IF NOT EXISTS width text;
+
+-- 2. Optional: Ensure customer visibility table supports dimensions & weight
+ALTER TABLE public.shipment_visibilities 
+ADD COLUMN IF NOT EXISTS show_weight boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS show_dimensions boolean DEFAULT true;
+`;
+
 export const SUPABASE_RLS_FIX_SQL = `-- SwiftShip Logistics - Supabase Row-Level Security (RLS) Policy Fix
 -- Run this in your Supabase Dashboard -> SQL Editor (New query -> Run)
 
@@ -91,12 +106,21 @@ ALTER TABLE public.shipment_receivers ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow all for shipment_receivers" ON public.shipment_receivers;
 CREATE POLICY "Allow all for shipment_receivers" ON public.shipment_receivers FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
 
--- 4. Shipment Details Table
+-- 4. Shipment Details Table (with weight, length, width columns)
+ALTER TABLE public.shipment_details 
+ADD COLUMN IF NOT EXISTS weight text,
+ADD COLUMN IF NOT EXISTS length text,
+ADD COLUMN IF NOT EXISTS width text;
+
 ALTER TABLE public.shipment_details ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow all for shipment_details" ON public.shipment_details;
 CREATE POLICY "Allow all for shipment_details" ON public.shipment_details FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
 
 -- 5. Shipment Visibilities Table
+ALTER TABLE public.shipment_visibilities 
+ADD COLUMN IF NOT EXISTS show_weight boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS show_dimensions boolean DEFAULT true;
+
 ALTER TABLE public.shipment_visibilities ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow all for shipment_visibilities" ON public.shipment_visibilities;
 CREATE POLICY "Allow all for shipment_visibilities" ON public.shipment_visibilities FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
@@ -498,6 +522,10 @@ export const supabaseService = {
           location: e.location || '',
         }));
 
+        const weight = getVal<string>(detailRow, 'weight') || undefined;
+        const length = getVal<string>(detailRow, 'length') || undefined;
+        const width = getVal<string>(detailRow, 'width') || undefined;
+
         return {
           id: String(s.id),
           trackingCode: getVal<string>(s, 'tracking_code', 'trackingCode') || '',
@@ -523,9 +551,19 @@ export const supabaseService = {
             name: getVal<string>(detailRow, 'product', 'product_name', 'name') || '',
             description: getVal<string>(detailRow, 'description') || '',
             quantity: Number(getVal<number>(detailRow, 'quantity') || 1),
+            weight,
+            length,
+            width,
           },
-          visibility,
+          visibility: {
+            ...visibility,
+            showWeight: getVal<boolean>(visRow, 'show_weight', 'showWeight') ?? DEFAULT_VISIBILITY.showWeight,
+            showDimensions: getVal<boolean>(visRow, 'show_dimensions', 'showDimensions') ?? DEFAULT_VISIBILITY.showDimensions,
+          },
           history,
+          weight,
+          length,
+          width,
         };
       });
 
@@ -569,8 +607,25 @@ export const supabaseService = {
         };
       }
 
+      const detailPayload: Record<string, any> = {
+        shipment_id: shipment.id,
+        product: shipment.product.name,
+        quantity: shipment.product.quantity,
+        transportation_method: shipment.transportation,
+        departure_date: shipment.departureDate,
+        estimated_delivery: shipment.estimatedDelivery,
+        origin: shipment.sender.address,
+        destination: shipment.receiver.address,
+      };
+      const itemWeight = shipment.product.weight || shipment.weight;
+      const itemLength = shipment.product.length || shipment.length;
+      const itemWidth = shipment.product.width || shipment.width;
+      if (itemWeight) detailPayload.weight = itemWeight;
+      if (itemLength) detailPayload.length = itemLength;
+      if (itemWidth) detailPayload.width = itemWidth;
+
       // 2. Insert child records in parallel
-      const [senderRes, receiverRes, detailRes, visRes] = await Promise.all([
+      const [senderRes, receiverRes, mutDetailRes, visRes] = await Promise.all([
         client.from('shipment_senders').insert([
           {
             shipment_id: shipment.id,
@@ -589,18 +644,7 @@ export const supabaseService = {
             phone: shipment.receiver.phone,
           },
         ]),
-        client.from('shipment_details').insert([
-          {
-            shipment_id: shipment.id,
-            product: shipment.product.name,
-            quantity: shipment.product.quantity,
-            transportation_method: shipment.transportation,
-            departure_date: shipment.departureDate,
-            estimated_delivery: shipment.estimatedDelivery,
-            origin: shipment.sender.address,
-            destination: shipment.receiver.address,
-          },
-        ]),
+        client.from('shipment_details').insert([detailPayload]),
         client.from('shipment_visibilities').insert([
           {
             shipment_id: shipment.id,
@@ -622,6 +666,15 @@ export const supabaseService = {
           },
         ]),
       ]);
+
+      let detailRes = mutDetailRes;
+      // If length/width columns don't exist yet in Supabase (error code 42703), retry without them
+      if (detailRes.error && detailRes.error.code === '42703') {
+        const fallbackPayload = { ...detailPayload };
+        delete fallbackPayload.length;
+        delete fallbackPayload.width;
+        detailRes = await client.from('shipment_details').insert([fallbackPayload]);
+      }
 
       for (const res of [senderRes, receiverRes, detailRes, visRes]) {
         if (res.error) {
@@ -763,19 +816,36 @@ export const supabaseService = {
         .eq('shipment_id', shipment.id);
 
       // Update product details
-      await client
+      const detailsUpdate: Record<string, any> = {
+        product: shipment.product.name,
+        quantity: shipment.product.quantity,
+        transportation_method: shipment.transportation,
+        departure_date: shipment.departureDate,
+        estimated_delivery: shipment.estimatedDelivery,
+        origin: shipment.sender.address,
+        destination: shipment.receiver.address,
+        updated_at: now,
+      };
+      const itemWeight = shipment.product.weight || shipment.weight;
+      const itemLength = shipment.product.length || shipment.length;
+      const itemWidth = shipment.product.width || shipment.width;
+      if (itemWeight !== undefined) detailsUpdate.weight = itemWeight;
+      if (itemLength !== undefined) detailsUpdate.length = itemLength;
+      if (itemWidth !== undefined) detailsUpdate.width = itemWidth;
+
+      const detailUpdateRes = await client
         .from('shipment_details')
-        .update({
-          product: shipment.product.name,
-          quantity: shipment.product.quantity,
-          transportation_method: shipment.transportation,
-          departure_date: shipment.departureDate,
-          estimated_delivery: shipment.estimatedDelivery,
-          origin: shipment.sender.address,
-          destination: shipment.receiver.address,
-          updated_at: now,
-        })
+        .update(detailsUpdate)
         .eq('shipment_id', shipment.id);
+
+      if (detailUpdateRes.error && detailUpdateRes.error.code === '42703') {
+        delete detailsUpdate.length;
+        delete detailsUpdate.width;
+        await client
+          .from('shipment_details')
+          .update(detailsUpdate)
+          .eq('shipment_id', shipment.id);
+      }
 
       // Update visibility settings
       await client

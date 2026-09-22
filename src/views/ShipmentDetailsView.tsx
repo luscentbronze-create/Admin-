@@ -268,6 +268,35 @@ export const ShipmentDetailsView: React.FC<ShipmentDetailsViewProps> = ({
                 </div>
               )}
 
+              {/* Package Specifications: Weight, Length, Width */}
+              {(shipment.product.weight || shipment.weight || shipment.product.length || shipment.length || shipment.product.width || shipment.width) && (
+                <div className="bg-[#171B22] p-3.5 rounded-xl border border-[#23272F] space-y-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+                    Package Dimensions & Weight
+                  </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {(shipment.product.weight || shipment.weight) && (
+                      <div>
+                        <span className="text-slate-500 block text-[10px]">Weight</span>
+                        <span className="font-semibold text-emerald-400">{shipment.product.weight || shipment.weight}</span>
+                      </div>
+                    )}
+                    {(shipment.product.length || shipment.length) && (
+                      <div>
+                        <span className="text-slate-500 block text-[10px]">Length</span>
+                        <span className="font-semibold text-white">{shipment.product.length || shipment.length}</span>
+                      </div>
+                    )}
+                    {(shipment.product.width || shipment.width) && (
+                      <div>
+                        <span className="text-slate-500 block text-[10px]">Width</span>
+                        <span className="font-semibold text-white">{shipment.product.width || shipment.width}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <div className="bg-[#171B22] p-3 rounded-xl border border-[#23272F]">
                   <span className="text-slate-500 block text-[11px] mb-1">Transport Mode</span>

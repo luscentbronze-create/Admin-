@@ -25,6 +25,9 @@ export interface ProductInfo {
   name: string;
   description: string;
   quantity: number;
+  weight?: string;
+  length?: string;
+  width?: string;
 }
 
 export interface CustomerVisibilitySettings {
@@ -48,6 +51,8 @@ export interface CustomerVisibilitySettings {
   showDepartureDate: boolean;
   showEstimatedDelivery: boolean;
   showTrackingHistory: boolean;
+  showWeight?: boolean;
+  showDimensions?: boolean;
 }
 
 export interface TrackingEvent {
@@ -72,6 +77,9 @@ export interface ShipmentRecord {
   history: TrackingEvent[];
   createdAt: string;
   updatedAt: string;
+  weight?: string;
+  length?: string;
+  width?: string;
 }
 
 export interface AdminUser {

@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { AdminUser } from '../types';
 import { storageService } from '../services/storage';
-import { supabaseService, getSupabaseConfigInfo, SUPABASE_RLS_FIX_SQL } from '../services/supabase';
+import { supabaseService, getSupabaseConfigInfo, SUPABASE_RLS_FIX_SQL, SUPABASE_COLUMNS_SQL } from '../services/supabase';
 
 interface SettingsViewProps {
   currentUser: AdminUser | null;
@@ -47,6 +47,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   } | null>(null);
   const [copiedSql, setCopiedSql] = useState(false);
   const [showSqlCode, setShowSqlCode] = useState(false);
+  const [copiedColsSql, setCopiedColsSql] = useState(false);
+  const [showColsSql, setShowColsSql] = useState(false);
   const [pushStatus, setPushStatus] = useState<{
     running: boolean;
     result?: {
@@ -89,6 +91,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     navigator.clipboard.writeText(SUPABASE_RLS_FIX_SQL);
     setCopiedSql(true);
     setTimeout(() => setCopiedSql(false), 2500);
+  };
+
+  const handleCopyColsSql = () => {
+    navigator.clipboard.writeText(SUPABASE_COLUMNS_SQL);
+    setCopiedColsSql(true);
+    setTimeout(() => setCopiedColsSql(false), 2500);
   };
 
   const handlePushLocalShipments = async () => {
@@ -376,6 +384,84 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </div>
             <pre className="text-[11px] font-mono text-emerald-400 overflow-x-auto max-h-60 p-2 leading-relaxed selection:bg-white selection:text-black">
               {SUPABASE_RLS_FIX_SQL}
+            </pre>
+          </div>
+        )}
+      </div>
+
+      {/* Supabase Schema Migration: Weight, Length & Width */}
+      <div className="bg-[#12151B] border border-[#23272F] rounded-2xl p-6 space-y-5">
+        <div className="flex items-center justify-between border-b border-[#1F2937] pb-3">
+          <div className="flex items-center gap-2 text-white font-bold text-sm">
+            <Database className="w-4 h-4 text-[#3ECF8E]" />
+            <h3>Database Schema Migration: Weight, Length & Width</h3>
+          </div>
+          <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-[#3ECF8E]/10 border border-[#3ECF8E]/30 text-[#3ECF8E] font-semibold">
+            Table Alteration SQL
+          </span>
+        </div>
+
+        <div className="space-y-3 text-xs text-slate-400">
+          <p className="leading-relaxed">
+            To store the new optional shipment dimensions (<code className="text-[#3ECF8E] bg-[#171B22] px-1 py-0.5 rounded font-mono">weight</code>, <code className="text-[#3ECF8E] bg-[#171B22] px-1 py-0.5 rounded font-mono">length</code>, and <code className="text-[#3ECF8E] bg-[#171B22] px-1 py-0.5 rounded font-mono">width</code>) directly in your Supabase tables, run this SQL query.
+          </p>
+          <p className="text-[11px] text-slate-400">
+            <em>Note: The app automatically detects if your table has these columns yet; if not, it saves gracefully in local memory and falls back safely without erroring.</em>
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 pt-1">
+          <button
+            onClick={handleCopyColsSql}
+            className="px-4 py-2.5 rounded-xl bg-[#3ECF8E] hover:bg-[#34B27B] text-black font-bold text-xs flex items-center gap-2 transition-all shadow-xs cursor-pointer"
+          >
+            {copiedColsSql ? (
+              <>
+                <Check className="w-4 h-4 stroke-[3]" />
+                <span>Copied Migration SQL!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-4 h-4 stroke-[2.5]" />
+                <span>Copy Migration SQL</span>
+              </>
+            )}
+          </button>
+
+          <a
+            href="https://supabase.com/dashboard/project/_/sql"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2.5 rounded-xl bg-[#171B22] hover:bg-[#222732] border border-[#2B313D] text-xs font-semibold text-white flex items-center gap-2 transition-colors"
+          >
+            <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+            <span>Open Supabase SQL Editor</span>
+          </a>
+
+          <button
+            onClick={() => setShowColsSql(!showColsSql)}
+            className="px-4 py-2.5 rounded-xl bg-[#171B22] hover:bg-[#222732] border border-[#2B313D] text-xs font-semibold text-slate-300 flex items-center gap-2 transition-colors cursor-pointer"
+          >
+            <Code2 className="w-3.5 h-3.5 text-slate-400" />
+            <span>{showColsSql ? 'Hide SQL Code' : 'View SQL Code'}</span>
+            {showColsSql ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </button>
+        </div>
+
+        {showColsSql && (
+          <div className="rounded-xl bg-[#0B0D11] border border-[#23272F] p-4 overflow-hidden space-y-2">
+            <div className="flex items-center justify-between text-[11px] text-slate-400 pb-2 border-b border-[#1A1F29]">
+              <span className="font-mono">add_dimensions_columns.sql</span>
+              <button
+                onClick={handleCopyColsSql}
+                className="text-[#3ECF8E] hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <Copy className="w-3 h-3" />
+                <span>{copiedColsSql ? 'Copied!' : 'Copy Code'}</span>
+              </button>
+            </div>
+            <pre className="text-[11px] font-mono text-emerald-400 overflow-x-auto max-h-60 p-2 leading-relaxed selection:bg-white selection:text-black">
+              {SUPABASE_COLUMNS_SQL}
             </pre>
           </div>
         )}

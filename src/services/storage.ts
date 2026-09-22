@@ -42,6 +42,8 @@ export const DEFAULT_VISIBILITY: CustomerVisibilitySettings = {
   showDepartureDate: true,
   showEstimatedDelivery: true,
   showTrackingHistory: true,
+  showWeight: true,
+  showDimensions: true,
 };
 
 // Generates an exact 11-character alphanumeric tracking code (e.g. 3B8R55K2W9T, 8F2K91M7Q4Z)
@@ -329,6 +331,9 @@ export const storageService = {
       history: [initialHistory],
       createdAt: now,
       updatedAt: now,
+      weight: data.product.weight,
+      length: data.product.length,
+      width: data.product.width,
     };
 
     shipments.unshift(newRecord);
@@ -485,6 +490,9 @@ export const storageService = {
         name?: string;
         description?: string;
         quantity?: number;
+        weight?: string;
+        length?: string;
+        width?: string;
       };
       sender?: {
         name?: string;
@@ -525,10 +533,19 @@ export const storageService = {
       phone: visibility.showReceiverPhone ? shipment.receiver.phone : undefined,
     };
 
+    const showWeight = visibility.showWeight ?? true;
+    const showDims = visibility.showDimensions ?? true;
+    const itemWeight = shipment.product.weight || shipment.weight;
+    const itemLength = shipment.product.length || shipment.length;
+    const itemWidth = shipment.product.width || shipment.width;
+
     const productData = {
       name: visibility.showProduct ? shipment.product.name : undefined,
       description: visibility.showProductDescription ? shipment.product.description : undefined,
       quantity: visibility.showQuantity ? shipment.product.quantity : undefined,
+      weight: showWeight ? itemWeight : undefined,
+      length: showDims ? itemLength : undefined,
+      width: showDims ? itemWidth : undefined,
     };
 
     return {
@@ -568,22 +585,11 @@ export const storageService = {
 
   getCurrentUser(): AdminUser | null {
     try {
-      // 1. Check session storage (active browser session)
+      // Check session storage (active browser session)
       const sessionData = sessionStorage.getItem(STORAGE_KEY_SESSION);
-      if (sessionData) {
-        if (sessionData === 'LOGGED_OUT') return null;
+      if (sessionData && sessionData !== 'LOGGED_OUT') {
         return JSON.parse(sessionData);
       }
-
-      // 2. Check persistent storage ONLY if remember-me was actively chosen
-      const isRemembered = localStorage.getItem(STORAGE_KEY_REMEMBER) === 'true';
-      if (isRemembered) {
-        const localData = localStorage.getItem(STORAGE_KEY_AUTH);
-        if (localData && localData !== 'LOGGED_OUT') {
-          return JSON.parse(localData);
-        }
-      }
-
       return null;
     } catch {
       return null;

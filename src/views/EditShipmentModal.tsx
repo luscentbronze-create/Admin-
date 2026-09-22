@@ -46,6 +46,9 @@ export const EditShipmentModal: React.FC<EditShipmentModalProps> = ({
     shipment.product.description || ''
   );
   const [quantity, setQuantity] = useState(shipment.product.quantity);
+  const [weight, setWeight] = useState(shipment.product.weight || shipment.weight || '');
+  const [length, setLength] = useState(shipment.product.length || shipment.length || '');
+  const [width, setWidth] = useState(shipment.product.width || shipment.width || '');
 
   // Logistics
   const [transportation, setTransportation] = useState<TransportationMethod>(
@@ -81,7 +84,13 @@ export const EditShipmentModal: React.FC<EditShipmentModalProps> = ({
         name: productName.trim(),
         description: productDescription.trim(),
         quantity: Number(quantity),
+        weight: weight.trim() || undefined,
+        length: length.trim() || undefined,
+        width: width.trim() || undefined,
       },
+      weight: weight.trim() || undefined,
+      length: length.trim() || undefined,
+      width: width.trim() || undefined,
       transportation,
       departureDate,
       estimatedDelivery,
@@ -291,6 +300,42 @@ export const EditShipmentModal: React.FC<EditShipmentModalProps> = ({
                     onChange={(e) => setProductDescription(e.target.value)}
                     className="w-full px-3 py-1.5 bg-[#12151B] border border-[#2B313D] rounded-lg text-white"
                   />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-slate-400 mb-1" htmlFor="edit-weight">Weight (Optional)</label>
+                    <input
+                      id="edit-weight"
+                      type="text"
+                      value={weight}
+                      onChange={(e) => setWeight(e.target.value)}
+                      placeholder="e.g. 5.4 kg"
+                      className="w-full px-3 py-1.5 bg-[#12151B] border border-[#2B313D] rounded-lg text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 mb-1" htmlFor="edit-length">Length (Optional)</label>
+                    <input
+                      id="edit-length"
+                      type="text"
+                      value={length}
+                      onChange={(e) => setLength(e.target.value)}
+                      placeholder="e.g. 40 cm"
+                      className="w-full px-3 py-1.5 bg-[#12151B] border border-[#2B313D] rounded-lg text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 mb-1" htmlFor="edit-width">Width (Optional)</label>
+                    <input
+                      id="edit-width"
+                      type="text"
+                      value={width}
+                      onChange={(e) => setWidth(e.target.value)}
+                      placeholder="e.g. 25 cm"
+                      className="w-full px-3 py-1.5 bg-[#12151B] border border-[#2B313D] rounded-lg text-white"
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">

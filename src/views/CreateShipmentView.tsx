@@ -58,6 +58,9 @@ export const CreateShipmentView: React.FC<CreateShipmentViewProps> = ({
   const [productName, setProductName] = useState('');
   const [productDescription, setProductDescription] = useState('');
   const [quantity, setQuantity] = useState<number>(1);
+  const [weight, setWeight] = useState('');
+  const [length, setLength] = useState('');
+  const [width, setWidth] = useState('');
 
   // Form State - Transportation & Delivery
   const [transportation, setTransportation] = useState<TransportationMethod>('Air');
@@ -113,6 +116,9 @@ export const CreateShipmentView: React.FC<CreateShipmentViewProps> = ({
     setProductName('Pro Ultra Graphic Tablets');
     setProductDescription('Box of 12 Pen Display Tablets with Stylus Kits');
     setQuantity(12);
+    setWeight('4.8 kg');
+    setLength('42 cm');
+    setWidth('28 cm');
 
     setTransportation('Air');
     setDepartureDate(todayStr);
@@ -178,6 +184,9 @@ export const CreateShipmentView: React.FC<CreateShipmentViewProps> = ({
         name: productName.trim(),
         description: productDescription.trim(),
         quantity: Number(quantity),
+        weight: weight.trim() || undefined,
+        length: length.trim() || undefined,
+        width: width.trim() || undefined,
       },
       transportation,
       departureDate,
@@ -234,6 +243,9 @@ export const CreateShipmentView: React.FC<CreateShipmentViewProps> = ({
     setProductName('');
     setProductDescription('');
     setQuantity(1);
+    setWeight('');
+    setLength('');
+    setWidth('');
     setCreatedRecord(null);
     setCurrentStep(1);
     setErrors({});
@@ -350,6 +362,20 @@ export const CreateShipmentView: React.FC<CreateShipmentViewProps> = ({
                   <StatusBadge status={createdRecord.status} size="sm" />
                 </div>
               </div>
+              {createdRecord.product.weight && (
+                <div>
+                  <span className="text-slate-500 block text-[11px]">Weight</span>
+                  <span className="font-medium text-emerald-400">{createdRecord.product.weight}</span>
+                </div>
+              )}
+              {(createdRecord.product.length || createdRecord.product.width) && (
+                <div>
+                  <span className="text-slate-500 block text-[11px]">Dimensions (L × W)</span>
+                  <span className="font-medium text-emerald-400">
+                    {createdRecord.product.length || '—'} × {createdRecord.product.width || '—'}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -673,6 +699,59 @@ export const CreateShipmentView: React.FC<CreateShipmentViewProps> = ({
                 placeholder="Specific model details, serial batches, accessories, fragile warnings..."
                 className="w-full px-3.5 py-2 bg-[#171B22] border border-[#2B313D] focus:border-[#FFD600] rounded-xl text-xs text-white placeholder-slate-600 outline-none resize-none"
               />
+            </div>
+
+            {/* Optional Package Dimensions & Weight */}
+            <div className="pt-3 border-t border-[#1F2937]/70">
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                  Package Weight & Dimensions <span className="text-slate-500 font-normal lowercase">(optional)</span>
+                </span>
+                <span className="text-[10px] text-slate-400">Cargo specifications for billing & manifest</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1" htmlFor="shipment-weight">
+                    Weight <span className="text-slate-500 font-normal text-[10px]">(Optional)</span>
+                  </label>
+                  <input
+                    id="shipment-weight"
+                    type="text"
+                    value={weight}
+                    onChange={(e) => setWeight(e.target.value)}
+                    placeholder="e.g. 5.4 kg or 12 lbs"
+                    className="w-full px-3.5 py-2 bg-[#171B22] border border-[#2B313D] focus:border-[#FFD600] rounded-xl text-xs text-white placeholder-slate-600 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1" htmlFor="shipment-length">
+                    Length <span className="text-slate-500 font-normal text-[10px]">(Optional)</span>
+                  </label>
+                  <input
+                    id="shipment-length"
+                    type="text"
+                    value={length}
+                    onChange={(e) => setLength(e.target.value)}
+                    placeholder="e.g. 40 cm or 16 in"
+                    className="w-full px-3.5 py-2 bg-[#171B22] border border-[#2B313D] focus:border-[#FFD600] rounded-xl text-xs text-white placeholder-slate-600 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1" htmlFor="shipment-width">
+                    Width <span className="text-slate-500 font-normal text-[10px]">(Optional)</span>
+                  </label>
+                  <input
+                    id="shipment-width"
+                    type="text"
+                    value={width}
+                    onChange={(e) => setWidth(e.target.value)}
+                    placeholder="e.g. 25 cm or 10 in"
+                    className="w-full px-3.5 py-2 bg-[#171B22] border border-[#2B313D] focus:border-[#FFD600] rounded-xl text-xs text-white placeholder-slate-600 outline-none"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1001,6 +1080,30 @@ export const CreateShipmentView: React.FC<CreateShipmentViewProps> = ({
                   />
                   <span>Show tracking history</span>
                 </label>
+
+                <label className="flex items-center gap-2.5 cursor-pointer text-xs text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={visibility.showWeight ?? true}
+                    onChange={(e) =>
+                      setVisibility({ ...visibility, showWeight: e.target.checked })
+                    }
+                    className="w-4 h-4 rounded text-[#FFD600] focus:ring-[#FFD600] bg-[#1A1E26] border-[#2E3646] accent-[#FFD600]"
+                  />
+                  <span>Show package weight</span>
+                </label>
+
+                <label className="flex items-center gap-2.5 cursor-pointer text-xs text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={visibility.showDimensions ?? true}
+                    onChange={(e) =>
+                      setVisibility({ ...visibility, showDimensions: e.target.checked })
+                    }
+                    className="w-4 h-4 rounded text-[#FFD600] focus:ring-[#FFD600] bg-[#1A1E26] border-[#2E3646] accent-[#FFD600]"
+                  />
+                  <span>Show package dimensions (length & width)</span>
+                </label>
               </div>
             </div>
           </div>
@@ -1070,6 +1173,13 @@ export const CreateShipmentView: React.FC<CreateShipmentViewProps> = ({
                 <p className="text-sm font-semibold text-white">
                   {productName} (Qty: {quantity})
                 </p>
+                {(weight || length || width) && (
+                  <p className="text-xs text-[#FFD600] font-medium">
+                    {weight ? `Weight: ${weight}` : ''}
+                    {weight && (length || width) ? ' • ' : ''}
+                    {(length || width) ? `Dimensions: ${length || '—'} × ${width || '—'}` : ''}
+                  </p>
+                )}
                 <p className="text-slate-400">Mode: {transportation} Freight</p>
                 <p className="text-slate-400">
                   Departing: {departureDate} | Est. Delivery: {estimatedDelivery}
@@ -1095,6 +1205,16 @@ export const CreateShipmentView: React.FC<CreateShipmentViewProps> = ({
                   {visibility.showProduct && (
                     <span className="px-2 py-0.5 rounded-md bg-black/40 text-[10px] text-slate-300">
                       Product
+                    </span>
+                  )}
+                  {visibility.showWeight && (
+                    <span className="px-2 py-0.5 rounded-md bg-black/40 text-[10px] text-slate-300">
+                      Weight
+                    </span>
+                  )}
+                  {visibility.showDimensions && (
+                    <span className="px-2 py-0.5 rounded-md bg-black/40 text-[10px] text-slate-300">
+                      Dimensions
                     </span>
                   )}
                   {visibility.showEstimatedDelivery && (

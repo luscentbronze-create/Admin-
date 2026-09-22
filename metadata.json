@@ -1,0 +1,6 @@
+{
+  "name": "SwiftShip - Logistics Admin Portal",
+  "description": "Secure logistics admin portal for managing shipments, generating unique 11-character tracking codes, and controlling customer visibility.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
